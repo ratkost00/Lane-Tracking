@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+import roi
 
 left_a, left_b, left_c = [],[],[]
 right_a, right_b, right_c = [],[],[]
@@ -9,7 +10,7 @@ def get_hist(img):
     hist = np.sum(img[img.shape[0]//2:,:], axis=0)
     return hist
 
-def sliding_window(img, nwindows=9, margin=100, minpix = 1, draw_windows=True):
+def slidingWindow(img, nwindows=9, margin=100, minpix = 1, draw_windows=True):
     global left_a, left_b, left_c,right_a, right_b, right_c
     left_fit_= np.empty(3)
     right_fit_ = np.empty(3)
@@ -65,17 +66,6 @@ def sliding_window(img, nwindows=9, margin=100, minpix = 1, draw_windows=True):
             leftx_current = np.int32(np.mean(nonzerox[good_left_inds]))
         if len(good_right_inds) > minpix:
             rightx_current = np.int32(np.mean(nonzerox[good_right_inds]))
-
-
-#        if len(good_right_inds) > minpix:
-#            rightx_current = np.int(np.mean([leftx_current +900, np.mean(nonzerox[good_right_inds])]))
-#        elif len(good_left_inds) > minpix:
-#            rightx_current = np.int(np.mean([np.mean(nonzerox[good_left_inds]) +900, rightx_current]))
-#        if len(good_left_inds) > minpix:
-#            leftx_current = np.int(np.mean([rightx_current -900, np.mean(nonzerox[good_left_inds])]))
-#        elif len(good_right_inds) > minpix:
-#            leftx_current = np.int(np.mean([np.mean(nonzerox[good_right_inds]) -900, leftx_current]))
-
 
     # Concatenate the arrays of indices
     left_lane_inds = np.concatenate(left_lane_inds)
@@ -137,3 +127,17 @@ def get_curve(img, leftx, rightx):
     center = (car_pos - lane_center_position) * xm_per_pix / 10
     # Now our radius of curvature is in meters
     return (left_curverad, right_curverad, center)
+
+
+def markLines(img, left_fit, right_fit, unwImg):
+    ploty = np.linspace(0, img.shape[0]-1, img.shape[0])
+    color_img = np.zeros_like(img)
+
+    left = np.array([np.transpose(np.vstack([left_fit, ploty]))])
+    right = np.array([np.flipud(np.transpose(np.vstack([right_fit, ploty])))])
+    points = np.hstack((left, right))
+    cv2.fillPoly(color_img, np.int_(points), (0, 128, 0))
+
+    unw = roi.invWarp(color_img)
+    ret = cv2.addWeighted(img, 1, unw, 0.7, 0)
+    return ret
